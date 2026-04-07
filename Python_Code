@@ -1,0 +1,89 @@
+#This Code for full automate
+
+import os
+import time
+import pandas as pd
+from datetime import datetime, time as dt_time
+import pywhatkit as kit
+from PIL import ImageGrab
+import win32com.client as win32
+
+DOWNLOAD_PATH = r"C:\Users\YourName\Downloads"
+MASTER_FILE = r"C:\Users\YourName\Desktop\master.xlsx"
+WHATSAPP_NUMBER = "+91XXXXXXXXXX"
+
+# Get latest file
+def get_latest_file(path):
+    files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".xlsx")]
+    return max(files, key=os.path.getctime)
+
+# Update master
+def update_master():
+    latest = get_latest_file(DOWNLOAD_PATH)
+
+    df_new = pd.read_excel(latest)
+    df_old = pd.read_excel(MASTER_FILE)
+
+    df = pd.concat([df_old, df_new], ignore_index=True)
+    df.to_excel(MASTER_FILE, index=False)
+
+    print(f"{datetime.now()} → Data Updated")
+
+# Take snapshot
+def take_snapshot():
+    excel = win32.Dispatch("Excel.Application")
+    excel.Visible = False
+
+    wb = excel.Workbooks.Open(MASTER_FILE)
+    ws = wb.Sheets(1)
+
+    ws.Range("A1:D10").CopyPicture()
+    img = ImageGrab.grabclipboard()
+    img.save(r"C:\Users\YourName\Desktop\summary.png")
+
+    wb.Close(False)
+    excel.Quit()
+
+    print(f"{datetime.now()} → Snapshot Taken")
+
+# Send WhatsApp
+def send_whatsapp():
+    now = datetime.now()
+
+    hour = now.hour
+    minute = now.minute + 2
+
+    kit.sendwhatmsg(WHATSAPP_NUMBER, "Hourly Report Ready", hour, minute)
+
+    print(f"{datetime.now()} → WhatsApp Scheduled")
+
+# Check if time is before midnight
+def is_before_midnight():
+    now = datetime.now().time()
+    return now < dt_time(23, 59)   # stop near 12 AM
+
+#Main loop
+def run():
+    print("Automation Started...")
+
+    while is_before_midnight():
+        try:
+            update_master()
+            take_snapshot()
+            send_whatsapp()
+
+            print("Next run in 1 hour...\n")
+            time.sleep(3600)
+
+        except Exception as e:
+            print("Error:", e)
+            time.sleep(60)
+
+    print("Stopped after midnight ✅")
+
+#Start
+if __name__ == "__main__":
+    run()
+
+
+
