@@ -1,0 +1,17 @@
+#This code for calling python code:
+
+Sub Run_Automation()
+
+    On Error GoTo ErrorHandler
+
+    ' Call Python function
+    RunPython "import AutomatCode; AutomatCode.main()"
+
+    MsgBox "? Automation Completed Successfully", vbInformation
+
+    Exit Sub
+
+ErrorHandler:
+    MsgBox "? Error while running Python automation", vbCritical
+
+End Sub
